@@ -65,3 +65,4 @@ else:
     while True:
         data=input('Enter data here: ')
         C.send_var(data)
+        
