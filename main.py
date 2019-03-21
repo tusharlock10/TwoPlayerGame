@@ -21,7 +21,9 @@ PROJ_RADIUS = 5
 BG_COLOR = [40, 40, 40]
 COLOR_1 = [255, 255, 255]   # My color
 COLOR_0 = [80, 130, 80]     # Opponent Color
-FONT = "FiraCode.ttf"
+FONT = "fc.ttf"
+WARNING_FONT="warning.ttf"
+WARNING_COLOR=[220,40,40]
 
 # AUTO CALCULATED CONSTANTS
 TRANSFORMED_COLOR_1 = tj.transform_color(
@@ -55,8 +57,11 @@ def display_info(screen, Player1, Player2, Proj):
     # Firstly, display Health inf of both players
     Life1 = round(Player1.life, 1)
     Life2 = round(Player2.life, 1)
-    display_text(screen, f"   You   | {Life1} %", 15, FONT, COLOR_1, [10, 10])
-    display_text(screen, f"Opponent | {Life2} %", 15, FONT, COLOR_0, [10, 28])
+    if Player1.life<25:
+        display_text(screen, f" YOU : LOW HEALTH", 14, WARNING_FONT, WARNING_COLOR, [10, 10])
+    else:
+        display_text(screen, f"   You   | {Life1}", 15, FONT, COLOR_1, [10, 10])
+    display_text(screen, f"Opponent | {Life2}", 15, FONT, COLOR_0, [10, 28])
 
     # Next, display number of live projectiles
     display_text(screen, f"   Your  | {Proj.Type1} %",
