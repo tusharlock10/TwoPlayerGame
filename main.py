@@ -27,6 +27,24 @@ PROJ_MULTI = 1.414
 DIFF = [(SIZE[0]-SIZE_SMALL[0])//2, (SIZE[1]-SIZE_SMALL[1])//2]
 
 
+def display_text(screen, text, size, font, color, pos):
+    Text = pygame.font.Font(font,size)
+    textsurface = Text.render(text, True, color)
+    screen.blit(textsurface,pos)
+
+
+def display_info(screen, Player1, Player2, Proj):
+    # Player1,2 and Proj are all objects
+    
+    # Firstly, display Health inf of both players
+    Life1=Player1.life
+    Life2=Player2.life
+    
+
+
+
+
+
 class Receiver:
     def __init__(self):
         self.my_ip = tj.get_ip_address()  # This PC's IP address
@@ -223,28 +241,36 @@ class Projectile:
             coord = proj[0]  # Coordinates of the projectile
             vel = proj[1]   # velocity of the projectile
             Type = proj[2]  # Color of the projetile
+            to_not_draw = False
             if Type:
                 color = COLOR_1
             else:
                 color = COLOR_0
 
             new_coord = self.__check_proj_boundary(coord, vel)
-            if new_coord and self.check_collision(Player, coord):
+            if new_coord:
+                if Type != Player1.Type:
+                    # That is, if the projectile and player type is different
+                    to_not_draw = self.check_collision(Player1, coord)
+                elif Type != Player2.Type:
+                    # That is, if the projectile and player type is different
+                    to_not_draw = self.check_collision(Player2, coord)
 
-                pygame.draw.circle(
+                if not to_not_draw:
+                    pygame.draw.circle(
                     screen, color, [int(new_coord[0]), int(new_coord[1])], PROJ_RADIUS)
-
-                new_projectiles.append([new_coord, vel, Type])
+                    new_projectiles.append([new_coord, vel, Type])
 
         self.projectiles = new_projectiles
 
     def check_collision(self, Player, proj_coord):
         # Here Player is the Player object
         # proj_coord are the coord. of projectile
-        if Player.player.collidpoint(proj_coord):
+        if Player.player.collidepoint(proj_coord):
             Player.life -= 15
             return True
         return False
+
 
         ### Main Game ###
 screen = pygame.display.set_mode(RES)
@@ -271,11 +297,15 @@ while run:
     P.update_player(screen)
     E.handle_events(Proj)
     E.update_player(screen)
-    Proj.draw_proj(screen)
+    Proj.draw_proj(screen, P, E)
+    P.check_died()
+    E.check_died()
+
+    display_info(screen, P, E, Proj)
 
     pygame.display.update()
 
     Clock.tick(60)
-    print(Clock.get_fps())
+    #print(Clock.get_fps())
 
 pygame.quit()
