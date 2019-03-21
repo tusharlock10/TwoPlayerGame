@@ -6,18 +6,21 @@ import tj
 import pickle
 import time
 import sys
+import random
 
 # USER CHANGABLE CONSTANTS
 RES = [600, 600]
 SIZE = [30, 30]
 SIZE_SMALL = [20, 20]
 ADDER = 7
+HIT_POINTS = 5.3
 
 PROJ_RADIUS = 5
 
 BG_COLOR = [40, 40, 40]
-COLOR_1 = [255, 255, 255]
-COLOR_0 = [80, 130, 80]
+COLOR_1 = [255, 255, 255]   # My color
+COLOR_0 = [80, 130, 80]     # Opponent Color
+FONT = "FiraCode.ttf"
 
 # AUTO CALCULATED CONSTANTS
 ADDER2 = round(ADDER/1.414, 2)
@@ -28,21 +31,25 @@ DIFF = [(SIZE[0]-SIZE_SMALL[0])//2, (SIZE[1]-SIZE_SMALL[1])//2]
 
 
 def display_text(screen, text, size, font, color, pos):
-    Text = pygame.font.Font(font,size)
+    Text = pygame.font.Font(font, size)
     textsurface = Text.render(text, True, color)
-    screen.blit(textsurface,pos)
+    screen.blit(textsurface, pos)
 
 
 def display_info(screen, Player1, Player2, Proj):
     # Player1,2 and Proj are all objects
-    
+
     # Firstly, display Health inf of both players
-    Life1=Player1.life
-    Life2=Player2.life
-    
+    Life1 = round(Player1.life, 1)
+    Life2 = round(Player2.life, 1)
+    display_text(screen, f"   You   | {Life1} %", 15, FONT, COLOR_1, [10, 10])
+    display_text(screen, f"Opponent | {Life2} %", 15, FONT, COLOR_0, [10, 28])
 
-
-
+    # Next, display number of live projectiles
+    display_text(screen, f"   Your  | {Proj.Type1} %",
+                 17, FONT, COLOR_1, [RES[0]-130, 10])
+    display_text(screen, f"Opponent | {Proj.Type0} %",
+                 17, FONT, COLOR_0, [RES[0]-130, 28])
 
 
 class Receiver:
@@ -87,7 +94,7 @@ class Sender:
 
 
 class Player:
-    def __init__(self, Type):   # Type:1 is me , Type:0 is enemy
+    def __init__(self, Type):   # Type: 1 is me , Type: 0 is enemy
         if Type:
             self.controls = {'UP': K_UP, 'DOWN': K_DOWN,
                              'LEFT': K_LEFT, 'RIGHT': K_RIGHT, 'SHOOT': K_SPACE}
@@ -201,6 +208,7 @@ class Player:
 class Projectile:
     def __init__(self):
         self.projectiles = []
+        self.Type1, self.Type0 = 0, 0
 
     def add_projectile(self, coord, vel, Type):
         proj = [coord, vel, Type]
@@ -237,12 +245,14 @@ class Projectile:
 
     def draw_proj(self, screen, Player1, Player2):
         new_projectiles = []
+        self.Type1, self.Type0 = 0, 0
         for proj in self.projectiles:
             coord = proj[0]  # Coordinates of the projectile
             vel = proj[1]   # velocity of the projectile
             Type = proj[2]  # Color of the projetile
             to_not_draw = False
-            if Type:
+
+            if Type:    # Means is Type: 1, means projectile is fired by player 1
                 color = COLOR_1
             else:
                 color = COLOR_0
@@ -258,8 +268,13 @@ class Projectile:
 
                 if not to_not_draw:
                     pygame.draw.circle(
-                    screen, color, [int(new_coord[0]), int(new_coord[1])], PROJ_RADIUS)
+                        screen, color, [int(new_coord[0]), int(new_coord[1])], PROJ_RADIUS)
                     new_projectiles.append([new_coord, vel, Type])
+
+                    if Type:
+                        self.Type1 += 1
+                    else:
+                        self.Type0 += 1
 
         self.projectiles = new_projectiles
 
@@ -267,14 +282,17 @@ class Projectile:
         # Here Player is the Player object
         # proj_coord are the coord. of projectile
         if Player.player.collidepoint(proj_coord):
-            Player.life -= 15
+            Player.life -= HIT_POINTS
             return True
         return False
 
-
         ### Main Game ###
-screen = pygame.display.set_mode(RES)
 
+
+pygame.init()       # Initialize modules
+pygame.font.init()
+
+screen = pygame.display.set_mode(RES)
 Clock = pygame.time.Clock()
 
 P = Player(1)
@@ -293,11 +311,12 @@ while run:
             if e.key == K_ESCAPE:
                 run = False
 
+    Proj.draw_proj(screen, P, E)
     P.handle_events(Proj)
     P.update_player(screen)
     E.handle_events(Proj)
     E.update_player(screen)
-    Proj.draw_proj(screen, P, E)
+
     P.check_died()
     E.check_died()
 
@@ -306,6 +325,6 @@ while run:
     pygame.display.update()
 
     Clock.tick(60)
-    #print(Clock.get_fps())
+    # print(Clock.get_fps())
 
 pygame.quit()
