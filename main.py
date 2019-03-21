@@ -8,18 +8,22 @@ import time
 import sys
 
 # USER CHANGABLE CONSTANTS
-RES = [500, 500]
+RES = [600, 600]
 SIZE = [30, 30]
 SIZE_SMALL = [20, 20]
 ADDER = 7
-PROJ_RADIUS = 4
+
+PROJ_RADIUS = 5
 
 BG_COLOR = [40, 40, 40]
 COLOR_1 = [255, 255, 255]
 COLOR_0 = [80, 130, 80]
 
 # AUTO CALCULATED CONSTANTS
-ADDER2 = round(ADDER/1.414,2)
+ADDER2 = round(ADDER/1.414, 2)
+PROJ_MULTI = 1.414
+
+
 DIFF = [(SIZE[0]-SIZE_SMALL[0])//2, (SIZE[1]-SIZE_SMALL[1])//2]
 
 
@@ -38,7 +42,6 @@ class Receiver:
         while True:
             data, addr = self.socket.recv(self.buffer)
             variable = pickle.loads(data)
-            print('Got this: %s' % variable)
             self.message = [True, variable]
 
     def close(self):
@@ -69,18 +72,27 @@ class Player:
     def __init__(self, Type):   # Type:1 is me , Type:0 is enemy
         if Type:
             self.controls = {'UP': K_UP, 'DOWN': K_DOWN,
-                             'LEFT': K_LEFT, 'RIGHT': K_RIGHT}
+                             'LEFT': K_LEFT, 'RIGHT': K_RIGHT, 'SHOOT': K_SPACE}
             s = [-SIZE[0]*2, -SIZE[1]*2]
             self.color = COLOR_1
         else:
-            self.controls = {'UP': K_w, 'DOWN': K_s, 'LEFT': K_a, 'RIGHT': K_d}
+            self.controls = {'UP': K_w, 'DOWN': K_s,
+                             'LEFT': K_a, 'RIGHT': K_d, 'SHOOT': K_x}
             s = [0, 0]
             self.color = COLOR_0
 
+        self.Type = Type
         self.coord = [(RES[0]+s[0])//2, (RES[1]+s[1]) //
-                      2]    # Starting coordinates
-        self.player = None
-        self.vel=None
+                      2]    # Coordinates of the upper left corner of the Player
+        self.center = None
+        self.__update_center()
+        self.player = None  # it is the pygame rectangle object
+        self.vel = None
+        self.PLAYER_SHOT = False
+        self.life = 100
+
+    def __update_center(self):
+        self.center = [self.coord[0]+SIZE[0]/2, self.coord[1]+SIZE[1]/2]
 
     def update_player(self, screen):
 
@@ -110,7 +122,7 @@ class Player:
 
         return [x_coord, y_coord]
 
-    def update_velocity(self):
+    def handle_events(self, Proj):  # Proj is the Projectile class here
         D = pygame.key.get_pressed()
 
         x_vel, y_vel = 0, 0
@@ -139,8 +151,33 @@ class Player:
             else:
                 x_vel = ADDER
 
+        if D[self.controls['SHOOT']]:
+            player_shoots = True
+        else:
+            player_shoots = False
+        self.add_projectile(player_shoots)
+
         self.coord = self.__check_boundary(self.coord, [x_vel, y_vel])
-        self.vel=[x_vel, y_vel]
+        self.__update_center()
+        self.vel = [x_vel, y_vel]
+
+    def add_projectile(self, player_shoots):
+        if player_shoots:
+            if not self.PLAYER_SHOT:
+                # Means Player hits the shoot button, and the shoot button is
+                # not already pressed, this approach allows for only 1 shot at a time
+                vel = self.vel
+                coord = self.center
+                Type = self.Type
+                Proj.add_projectile(coord, vel, Type)
+                self.PLAYER_SHOT = True
+
+        else:
+            self.PLAYER_SHOT = False
+
+    def check_died(self):
+        if self.life <= 0:
+            print(f'Player {self.Type} died!!!')
 
 
 class Projectile:
@@ -157,19 +194,20 @@ class Projectile:
         If it is in the boundary, then return updated coordinates
         Else return None, as a signal to destroy that projectile"""
         x_vel, y_vel = vel
+        x_vel, y_vel = x_vel*PROJ_MULTI, y_vel*PROJ_MULTI
         x_coord, y_coord = coord
 
         if y_vel < 0 and 0 <= y_coord:
             # Means if proj is going UP and player is below the UPPER boundary
             y_coord += y_vel
-        elif y_vel > 0 and y_coord <= (RES[1]-SIZE[1]-ADDER2-1):
+        elif y_vel > 0 and y_coord <= RES[1]:
             # Means if proj is going DOWN and player is above the LOWER boundary
             y_coord += y_vel
 
-        if x_vel < 0 and 0 <= x_coord-ADDER2-1:
+        if x_vel < 0 and 0 <= x_coord:
             # Means if proj is going LEFT and player is below the LEFT boundary
             x_coord += x_vel
-        elif x_vel > 0 and x_coord <= (RES[0]-SIZE[0]-ADDER2-1):
+        elif x_vel > 0 and x_coord <= RES[0]:
             # Means if proj is going RIGHT and player is above the RIGHT boundary
             x_coord += x_vel
 
@@ -179,7 +217,7 @@ class Projectile:
         else:
             return None
 
-    def draw_proj(self, screen):
+    def draw_proj(self, screen, Player1, Player2):
         new_projectiles = []
         for proj in self.projectiles:
             coord = proj[0]  # Coordinates of the projectile
@@ -190,11 +228,23 @@ class Projectile:
             else:
                 color = COLOR_0
 
-            pygame.draw.circle(screen, color, coord, PROJ_RADIUS)
             new_coord = self.__check_proj_boundary(coord, vel)
-            if new_coord:
-                new_projectiles.append([coord, vel, Type])
+            if new_coord and self.check_collision(Player, coord):
+
+                pygame.draw.circle(
+                    screen, color, [int(new_coord[0]), int(new_coord[1])], PROJ_RADIUS)
+
+                new_projectiles.append([new_coord, vel, Type])
+
         self.projectiles = new_projectiles
+
+    def check_collision(self, Player, proj_coord):
+        # Here Player is the Player object
+        # proj_coord are the coord. of projectile
+        if Player.player.collidpoint(proj_coord):
+            Player.life -= 15
+            return True
+        return False
 
         ### Main Game ###
 screen = pygame.display.set_mode(RES)
@@ -203,6 +253,7 @@ Clock = pygame.time.Clock()
 
 P = Player(1)
 E = Player(0)
+Proj = Projectile()
 
 
 run = True
@@ -216,13 +267,15 @@ while run:
             if e.key == K_ESCAPE:
                 run = False
 
-    P.update_velocity()
+    P.handle_events(Proj)
     P.update_player(screen)
-    E.update_velocity()
+    E.handle_events(Proj)
     E.update_player(screen)
+    Proj.draw_proj(screen)
 
     pygame.display.update()
 
     Clock.tick(60)
+    print(Clock.get_fps())
 
 pygame.quit()
