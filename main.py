@@ -11,9 +11,9 @@ import tj
 
 # USER CHANGABLE CONSTANTS
 RES = [600, 600]
-SIZE = [30, 30]
-SIZE_SMALL = [20, 20]
-ADDER = 7
+SIZE = [40, 40]
+SIZE_SMALL = [36, 36]
+ADDER = 6
 HIT_POINTS = 5.3
 T_SKIP = [1, 1, 1]
 PROJ_RADIUS = 5
@@ -22,8 +22,9 @@ BG_COLOR = [40, 40, 40]
 COLOR_1 = [255, 255, 255]   # My color
 COLOR_0 = [80, 130, 80]     # Opponent Color
 FONT = "fc.ttf"
-WARNING_FONT="warning.ttf"
-WARNING_COLOR=[220,40,40]
+WARNING_FONT = "warning.ttf"
+WARNING_COLOR = [220, 40, 40]
+SPLASH_TIME = 2
 
 # AUTO CALCULATED CONSTANTS
 TRANSFORMED_COLOR_1 = tj.transform_color(
@@ -34,7 +35,9 @@ TRANSFORMED_COLOR_1 = TRANSFORMED_COLOR_1+TRANSFORMED_COLOR_1[::-1]
 TRANSFORMED_COLOR_0 = TRANSFORMED_COLOR_0+TRANSFORMED_COLOR_0[::-1]
 ADDER2 = round(ADDER/1.414, 2)
 PROJ_MULTI = 1.414
-
+SPLASHED = False
+temp_splash = 0
+time_started = False
 
 DIFF = [(SIZE[0]-SIZE_SMALL[0])//2, (SIZE[1]-SIZE_SMALL[1])//2]
 
@@ -51,22 +54,31 @@ def display_text(screen, text, size, font, color, pos):
     screen.blit(textsurface, pos)
 
 
-def display_info(screen, Player1, Player2, Proj):
+def display_info(screen, Player1, Player0, Proj):
+    global SPLASHED, TEMP_SPLASH, time_started, temp_splash
     # Player1,2 and Proj are all objects
 
     # Firstly, display Health inf of both players
     Life1 = round(Player1.life, 1)
-    Life2 = round(Player2.life, 1)
-    if Player1.life<25:
-        display_text(screen, f" YOU : LOW HEALTH", 14, WARNING_FONT, WARNING_COLOR, [10, 10])
-    else:
-        display_text(screen, f"   You   | {Life1}", 15, FONT, COLOR_1, [10, 10])
-    display_text(screen, f"Opponent | {Life2}", 15, FONT, COLOR_0, [10, 28])
+    Life0 = round(Player0.life, 1)
+    if Player1.life < 25 and not SPLASHED:
+        if not time_started:
+            temp_splash = time.time()
+            time_started = True
+
+        display_text(screen, f"HEALTH LOW!", RES[0]//15,
+                     WARNING_FONT, WARNING_COLOR, [10, 10])
+
+        if time.time()-temp_splash > SPLASH_TIME:
+            SPLASHED = True
+
+    display_text(screen, f"   You   | {Life1}", 15, FONT, COLOR_1, [10, 10])
+    display_text(screen, f"Opponent | {Life0}", 15, FONT, COLOR_0, [10, 28])
 
     # Next, display number of live projectiles
-    display_text(screen, f"   Your  | {Proj.Type1} %",
+    display_text(screen, f"   Your  | {Proj.num_Type1} %",
                  17, FONT, COLOR_1, [RES[0]-130, 10])
-    display_text(screen, f"Opponent | {Proj.Type0} %",
+    display_text(screen, f"Opponent | {Proj.num_Type0} %",
                  17, FONT, COLOR_0, [RES[0]-130, 28])
 
 
@@ -234,7 +246,7 @@ class Player:
 class Projectile:
     def __init__(self):
         self.projectiles = []
-        self.Type1, self.Type0 = 0, 0
+        self.num_Type1, self.num_Type0 = 0, 0
 
     def add_projectile(self, coord, vel, Type):
         proj = [coord, vel, Type]
@@ -271,7 +283,7 @@ class Projectile:
 
     def draw_proj(self, screen, Player1, Player2):
         new_projectiles = []
-        self.Type1, self.Type0 = 0, 0
+        self.num_Type1, self.num_Type0 = 0, 0
         for proj in self.projectiles:
             coord = proj[0]  # Coordinates of the projectile
             vel = proj[1]   # velocity of the projectile
@@ -298,9 +310,9 @@ class Projectile:
                     new_projectiles.append([new_coord, vel, Type])
 
                     if Type:
-                        self.Type1 += 1
+                        self.num_Type1 += 1
                     else:
-                        self.Type0 += 1
+                        self.num_Type0 += 1
 
         self.projectiles = new_projectiles
 
@@ -309,6 +321,8 @@ class Projectile:
         # proj_coord are the coord. of projectile
         if Player.player.collidepoint(proj_coord):
             Player.life -= HIT_POINTS
+            if Player.life < 0:
+                Player.life = 0
             return True
         return False
 
