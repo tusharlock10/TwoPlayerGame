@@ -7,6 +7,7 @@ import pickle
 import time
 import sys
 import random
+import tj
 
 # USER CHANGABLE CONSTANTS
 RES = [600, 600]
@@ -14,7 +15,7 @@ SIZE = [30, 30]
 SIZE_SMALL = [20, 20]
 ADDER = 7
 HIT_POINTS = 5.3
-
+T_SKIP = [1, 1, 1]
 PROJ_RADIUS = 5
 
 BG_COLOR = [40, 40, 40]
@@ -23,11 +24,23 @@ COLOR_0 = [80, 130, 80]     # Opponent Color
 FONT = "FiraCode.ttf"
 
 # AUTO CALCULATED CONSTANTS
+TRANSFORMED_COLOR_1 = tj.transform_color(
+    COLOR_1, BG_COLOR, skipR=T_SKIP[0], skipG=T_SKIP[1], skipB=T_SKIP[2])
+TRANSFORMED_COLOR_0 = tj.transform_color(
+    COLOR_0, BG_COLOR, skipR=T_SKIP[0], skipG=T_SKIP[1], skipB=T_SKIP[2])
+TRANSFORMED_COLOR_1 = TRANSFORMED_COLOR_1+TRANSFORMED_COLOR_1[::-1]
+TRANSFORMED_COLOR_0 = TRANSFORMED_COLOR_0+TRANSFORMED_COLOR_0[::-1]
 ADDER2 = round(ADDER/1.414, 2)
 PROJ_MULTI = 1.414
 
 
 DIFF = [(SIZE[0]-SIZE_SMALL[0])//2, (SIZE[1]-SIZE_SMALL[1])//2]
+
+
+def cycle(L):   # A simple function to put the first element of the list, at last
+    temp = L.pop(0)
+    L.append(temp)
+    return L
 
 
 def display_text(screen, text, size, font, color, pos):
@@ -120,6 +133,14 @@ class Player:
         self.center = [self.coord[0]+SIZE[0]/2, self.coord[1]+SIZE[1]/2]
 
     def update_player(self, screen):
+        global TRANSFORMED_COLOR_0, TRANSFORMED_COLOR_1
+        if self.life < 25:
+            if self.Type:
+                self.color = TRANSFORMED_COLOR_1[0]
+                TRANSFORMED_COLOR_1 = cycle(TRANSFORMED_COLOR_1)
+            else:
+                self.color = TRANSFORMED_COLOR_0[0]
+                TRANSFORMED_COLOR_0 = cycle(TRANSFORMED_COLOR_0)
 
         self.player = pygame.draw.rect(
             screen, self.color, [int(self.coord[0]), int(self.coord[1]), *SIZE])
