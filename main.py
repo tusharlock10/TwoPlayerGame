@@ -12,13 +12,14 @@ RES = [500, 500]
 SIZE = [30, 30]
 SIZE_SMALL = [20, 20]
 ADDER = 7
+PROJ_RADIUS = 4
 
 BG_COLOR = [40, 40, 40]
 COLOR_1 = [255, 255, 255]
-COLOR_2 = [80, 130, 80]
+COLOR_0 = [80, 130, 80]
 
 # AUTO CALCULATED CONSTANTS
-ADDER2 = ADDER/1.414
+ADDER2 = round(ADDER/1.414,2)
 DIFF = [(SIZE[0]-SIZE_SMALL[0])//2, (SIZE[1]-SIZE_SMALL[1])//2]
 
 
@@ -74,11 +75,12 @@ class Player:
         else:
             self.controls = {'UP': K_w, 'DOWN': K_s, 'LEFT': K_a, 'RIGHT': K_d}
             s = [0, 0]
-            self.color = COLOR_2
+            self.color = COLOR_0
 
         self.coord = [(RES[0]+s[0])//2, (RES[1]+s[1]) //
                       2]    # Starting coordinates
         self.player = None
+        self.vel=None
 
     def update_player(self, screen):
 
@@ -138,21 +140,61 @@ class Player:
                 x_vel = ADDER
 
         self.coord = self.__check_boundary(self.coord, [x_vel, y_vel])
+        self.vel=[x_vel, y_vel]
 
 
 class Projectile:
     def __init__(self):
         self.projectiles = []
 
-    def add_projectile(self, pos, vel, Type):
-        proj = [pos, vel, Type]
+    def add_projectile(self, coord, vel, Type):
+        proj = [coord, vel, Type]
         self.projectiles.append(proj)
-    
-    def draw_proj(self):
+
+    @staticmethod
+    def __check_proj_boundary(coord, vel):
+        """Check if the projectile is in the boundary or not
+        If it is in the boundary, then return updated coordinates
+        Else return None, as a signal to destroy that projectile"""
+        x_vel, y_vel = vel
+        x_coord, y_coord = coord
+
+        if y_vel < 0 and 0 <= y_coord:
+            # Means if proj is going UP and player is below the UPPER boundary
+            y_coord += y_vel
+        elif y_vel > 0 and y_coord <= (RES[1]-SIZE[1]-ADDER2-1):
+            # Means if proj is going DOWN and player is above the LOWER boundary
+            y_coord += y_vel
+
+        if x_vel < 0 and 0 <= x_coord-ADDER2-1:
+            # Means if proj is going LEFT and player is below the LEFT boundary
+            x_coord += x_vel
+        elif x_vel > 0 and x_coord <= (RES[0]-SIZE[0]-ADDER2-1):
+            # Means if proj is going RIGHT and player is above the RIGHT boundary
+            x_coord += x_vel
+
+        new_coord = [x_coord, y_coord]
+        if new_coord != coord:
+            return new_coord
+        else:
+            return None
+
+    def draw_proj(self, screen):
+        new_projectiles = []
         for proj in self.projectiles:
+            coord = proj[0]  # Coordinates of the projectile
+            vel = proj[1]   # velocity of the projectile
+            Type = proj[2]  # Color of the projetile
+            if Type:
+                color = COLOR_1
+            else:
+                color = COLOR_0
 
-
-
+            pygame.draw.circle(screen, color, coord, PROJ_RADIUS)
+            new_coord = self.__check_proj_boundary(coord, vel)
+            if new_coord:
+                new_projectiles.append([coord, vel, Type])
+        self.projectiles = new_projectiles
 
         ### Main Game ###
 screen = pygame.display.set_mode(RES)
