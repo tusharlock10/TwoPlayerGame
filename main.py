@@ -82,7 +82,7 @@ temp_splash = 0
 time_started = False
 
 DIFF = [(SIZE[0]-SIZE_SMALL[0])//2, (SIZE[1]-SIZE_SMALL[1])//2]
-
+WINNER = None
 
 
 def cycle(L):   # A simple function to put the first element of the list, at last
@@ -100,16 +100,16 @@ def display_text(screen, text, size, font, color, pos):
 def display_other_info(screen, fps):
     if SHOW_WATERMARK:
         display_text(screen, f"TJ ", 220, WATERMARK_FONT,
-                    WATERMARK_COLOR, [RES[0]//2-100, 10])
+                     WATERMARK_COLOR, [RES[0]//2-100, 10])
         display_text(screen, f"Productions", 92, WATERMARK_FONT,
-                    WATERMARK_COLOR, [10, RES[1]//3+20])
+                     WATERMARK_COLOR, [10, RES[1]//3+20])
         display_text(screen, f"2019", 220, WATERMARK_FONT,
-                    WATERMARK_COLOR, [50, RES[1]//2])
+                     WATERMARK_COLOR, [50, RES[1]//2])
 
     if SHOW_FPS:
         fps = round(fps, 1)
         display_text(screen, f"FPS | {fps}", 15, FONT,
-                 [200, 200, 200], [RES[0]//2-35, RES[1]-25])
+                     [200, 200, 200], [RES[0]//2-35, RES[1]-25])
 
 
 def display_info(screen, Player1, Player0, Proj):
@@ -245,7 +245,7 @@ class Player:
     def handle_events(self, Proj):
         global DATA_TO_SEND
         # Proj is the Projectile object here, Sender is the Sender object
-        # D = pygame.key.get_pressed()
+        D = pygame.key.get_pressed()
 
         x_vel, y_vel = 0, 0
         if D[self.controls['UP']]:
