@@ -1,27 +1,23 @@
 import pygame
 from pygame.locals import *
-# from socket import *
-# from threading import Thread
 import tj
 import json
-# import pickle
 import time
 import sys
-# import random
 import tj
-# import zlib
+
 
 # USER CHANGABLE CONSTANTS
 
 # AQUIRING CONSTANTS ----------------------------------------
 D = {
-    'RES': [500, 500],
-    'SIZE': [40, 40],
-    'SIZE_SMALL': [32, 32],
+    'RES': [500, 400],
+    'SIZE': [30, 30],
+    'SIZE_SMALL': [28, 28],
     'ADDER': 6,
-    'HIT_POINTS': 5.3,
+    'HIT_POINTS': 4.3,
     'T_SKIP': [1, 1, 1],
-    'PROJ_RADIUS': 5,
+    'PROJ_RADIUS': 4,
     'FPS': 60,
     'BG_COLOR': [40, 40, 40],
     'COLOR_1': [255, 205, 220],   # My color
@@ -77,9 +73,11 @@ TRANSFORMED_COLOR_1 = TRANSFORMED_COLOR_1+TRANSFORMED_COLOR_1[::-1]
 TRANSFORMED_COLOR_0 = TRANSFORMED_COLOR_0+TRANSFORMED_COLOR_0[::-1]
 ADDER2 = round(ADDER/1.414, 2)
 PROJ_MULTI = 1.414
-SPLASHED = False
-temp_splash = 0
-time_started = False
+SPLASHED_1, SPLASHED_0 = False, False
+temp_splash_1, temp_splash_0 = 0, 0
+time_started_1, time_started_0 = False, False
+WINNER = None
+
 
 DIFF = [(SIZE[0]-SIZE_SMALL[0])//2, (SIZE[1]-SIZE_SMALL[1])//2]
 
@@ -99,35 +97,47 @@ def display_text(screen, text, size, font, color, pos):
 def display_other_info(screen, fps):
     if SHOW_WATERMARK:
         display_text(screen, f"TJ ", 220, WATERMARK_FONT,
-                    WATERMARK_COLOR, [RES[0]//2-100, 10])
+                     WATERMARK_COLOR, [RES[0]//2-100, 10])
         display_text(screen, f"Productions", 92, WATERMARK_FONT,
-                    WATERMARK_COLOR, [10, RES[1]//3+20])
+                     WATERMARK_COLOR, [10, RES[1]//3+20])
         display_text(screen, f"2019", 220, WATERMARK_FONT,
-                    WATERMARK_COLOR, [50, RES[1]//2])
+                     WATERMARK_COLOR, [50, RES[1]//2])
 
     if SHOW_FPS:
         fps = round(fps, 1)
         display_text(screen, f"FPS | {fps}", 15, FONT,
-                 [200, 200, 200], [RES[0]//2-35, RES[1]-25])
+                     [200, 200, 200], [RES[0]//2-35, RES[1]-25])
 
 
 def display_info(screen, Player1, Player0, Proj):
-    global SPLASHED, TEMP_SPLASH, time_started, temp_splash
+    global SPLASHED_1,  time_started_1, temp_splash_1
+    global SPLASHED_0,  time_started_0, temp_splash_0
     # Player1,2 and Proj are all objects
 
     # Firstly, display Health inf of both players
     Life1 = round(Player1.life, 1)
     Life0 = round(Player0.life, 1)
-    if Player1.life < 25 and not SPLASHED:
-        if not time_started:
-            temp_splash = time.time()
-            time_started = True
+    if Player1.life < 25 and not SPLASHED_1:
+        if not time_started_1:
+            temp_splash_1 = time.time()
+            time_started_1 = True
 
         display_text(screen, f"HEALTH LOW!", RES[0]//5,
-                     WARNING_FONT, WARNING_COLOR, [5, RES[1]//2-30])
+                     WARNING_FONT, COLOR_1, [5, RES[1]//2-30])
 
-        if time.time()-temp_splash > SPLASH_TIME:
-            SPLASHED = True
+        if time.time()-temp_splash_1 > SPLASH_TIME:
+            SPLASHED_1 = True
+
+    if Player0.life < 25 and not SPLASHED_0:
+        if not time_started_0:
+            temp_splash_0 = time.time()
+            time_started_0 = True
+
+        display_text(screen, f"HEALTH LOW!", RES[0]//5,
+                     WARNING_FONT, COLOR_0, [5, RES[1]//2-30])
+
+        if time.time()-temp_splash_0 > SPLASH_TIME:
+            SPLASHED_0 = True
 
     display_text(screen, f"   You   | {Life1} %", 15, FONT, COLOR_1, [10, 10])
     display_text(screen, f"Opponent | {Life0} %", 15, FONT, COLOR_0, [10, 28])
@@ -137,46 +147,6 @@ def display_info(screen, Player1, Player0, Proj):
                  17, FONT, COLOR_1, [RES[0]-130, 10])
     display_text(screen, f"Opponent | {Proj.num_Type0} %",
                  17, FONT, COLOR_0, [RES[0]-130, 28])
-
-
-# class Receiver:
-#     def __init__(self):
-#         self.my_ip = tj.get_ip_address()  # This PC's IP address
-#         self.port = 8211
-#         self.buffer = 1300
-#         self.my_addr = (self.my_ip, self.port)
-#         self.socket = socket(AF_INET, SOCK_DGRAM)
-#         self.socket.bind(self.my_addr)
-
-#     def recv_var(self):
-#         global DATA_RECEIVED
-#         """Run this function in a thread"""
-#         while True:
-#             data = self.socket.recv(self.buffer)
-#             DATA_RECEIVED = pickle.loads(data)
-
-#     def close(self):
-#         self.socket.close()
-
-
-# class Sender:
-#     def __init__(self):
-#         self.partner_ip = self.__get_pip()  # Get IP address of partner (p_ip)
-#         self.port = 8211
-#         self.p_addr = (self.partner_ip, self.port)
-#         self.socket = socket(AF_INET, SOCK_DGRAM)  # Make a UDP socket
-
-#     @staticmethod
-#     def __get_pip():
-#         ip = tj.get_ip_address()  # input('Enter the IP address of the opponent computer: ')
-#         return ip
-
-#     def send_var(self, variable):
-#         data = pickle.dumps(variable)
-#         self.socket.sendto(data, self.p_addr)
-
-#     def close(self):
-#         self.socket.close()
 
 
 class Player:
@@ -242,7 +212,6 @@ class Player:
         return [x_coord, y_coord]
 
     def handle_events(self, Proj):
-        # global DATA_TO_SEND
         # Proj is the Projectile object here, Sender is the Sender object
         D = pygame.key.get_pressed()
 
@@ -276,16 +245,14 @@ class Player:
             player_shoots = True
         else:
             player_shoots = False
-        self.add_projectile(player_shoots)
+        self.add_projectile(player_shoots, Proj)
 
         self.coord = self.__check_boundary(self.coord, [x_vel, y_vel])
-        # DATA_TO_SEND.append(self.coord)
 
         self.update_center()
         self.vel = [x_vel, y_vel]
 
-    def add_projectile(self, player_shoots):
-        global Proj
+    def add_projectile(self, player_shoots, Proj):
         if player_shoots:
             if not self.PLAYER_SHOT:
                 # Means Player hits the shoot button, and the shoot button is
@@ -295,7 +262,6 @@ class Player:
                 Type = self.Type
                 proj = [coord, vel, Type]
                 Proj.add_projectile(coord, vel, Type)
-                # DATA_TO_SEND.append(proj)
                 self.PLAYER_SHOT = True
 
         else:
@@ -389,64 +355,53 @@ class Projectile:
             return True
         return False
 
+### MAIN FUNCTINO ###
 
-# def handle_enemy():
-#     # This is the function, specifically for handeling the enemy
-#     global DATA_RECEIVED, E, Proj
-#     coord = DATA_RECEIVED[0]
-#     proj = DATA_RECEIVED[1]
-#     E.coord = coord
-#     E.update_center()
-#     Proj.add_projectile(proj[0], proj[1], 0)
+def main():
+    pygame.init()       # Initialize modules
+    pygame.font.init()
 
-    ### Main Game ###
+    screen = pygame.display.set_mode(RES)
+    Clock = pygame.time.Clock()
 
 
-pygame.init()       # Initialize modules
-pygame.font.init()
-
-screen = pygame.display.set_mode(RES)
-Clock = pygame.time.Clock()
-
-# R = Receiver()
-# task = Thread(target=R.recv_var, daemon=True)
-# task.start()
-# S = Sender()
+    P = Player(1)
+    E = Player(0)
+    Proj = Projectile()
 
 
-P = Player(1)
-E = Player(0)
-Proj = Projectile()
+    run = True
+    while run:
+        DATA_TO_SEND = []
+        DATA_RECEIVED = []
+        screen.fill(BG_COLOR)
 
-
-run = True
-while run:
-    DATA_TO_SEND = []
-    DATA_RECEIVED = []
-    screen.fill(BG_COLOR)
-
-    for e in pygame.event.get():
-        if e.type == QUIT:
-            run = False
-        if e.type == KEYDOWN:
-            if e.key == K_ESCAPE:
+        for e in pygame.event.get():
+            if e.type == QUIT:
                 run = False
+            if e.type == KEYDOWN:
+                if e.key == K_ESCAPE:
+                    run = False
 
-    display_other_info(screen, Clock.get_fps())
-    Proj.draw_proj(screen, P, E)
-    P.handle_events(Proj)
-    P.update_player(screen)
-    E.handle_events(Proj)
-    E.update_player(screen)
+        display_other_info(screen, Clock.get_fps())
+        Proj.draw_proj(screen, P, E)
+        P.handle_events(Proj)
+        P.update_player(screen)
+        E.handle_events(Proj)
+        E.update_player(screen)
 
-    P.check_died()
-    E.check_died()
-    display_info(screen, P, E, Proj)
+        P.check_died()
+        E.check_died()
+        display_info(screen, P, E, Proj)
 
-    # S.send_var(DATA_TO_SEND)
+        pygame.display.update()
 
-    pygame.display.update()
+        Clock.tick(FPS)
 
-    Clock.tick(FPS)
+
+if __name__=='__main__':
+    while True:
+        main()
+        break
 
 pygame.quit()
