@@ -1,15 +1,15 @@
 import pygame
 from pygame.locals import *
-# from socket import *
-# from threading import Thread
+from socket import *
+from threading import Thread
 import tj
 import json
-# import pickle
+import pickle
 import time
 import sys
-# import random
+import random
 import tj
-# import zlib
+import zlib
 
 # USER CHANGABLE CONSTANTS
 
@@ -84,6 +84,7 @@ time_started = False
 DIFF = [(SIZE[0]-SIZE_SMALL[0])//2, (SIZE[1]-SIZE_SMALL[1])//2]
 
 
+
 def cycle(L):   # A simple function to put the first element of the list, at last
     temp = L.pop(0)
     L.append(temp)
@@ -139,44 +140,44 @@ def display_info(screen, Player1, Player0, Proj):
                  17, FONT, COLOR_0, [RES[0]-130, 28])
 
 
-# class Receiver:
-#     def __init__(self):
-#         self.my_ip = tj.get_ip_address()  # This PC's IP address
-#         self.port = 8211
-#         self.buffer = 1300
-#         self.my_addr = (self.my_ip, self.port)
-#         self.socket = socket(AF_INET, SOCK_DGRAM)
-#         self.socket.bind(self.my_addr)
+class Receiver:
+    def __init__(self):
+        self.my_ip = tj.get_ip_address()  # This PC's IP address
+        self.port = 8211
+        self.buffer = 1300
+        self.my_addr = (self.my_ip, self.port)
+        self.socket = socket(AF_INET, SOCK_DGRAM)
+        self.socket.bind(self.my_addr)
 
-#     def recv_var(self):
-#         global DATA_RECEIVED
-#         """Run this function in a thread"""
-#         while True:
-#             data = self.socket.recv(self.buffer)
-#             DATA_RECEIVED = pickle.loads(data)
+    def recv_var(self):
+        global DATA_RECEIVED
+        """Run this function in a thread"""
+        while True:
+            data = self.socket.recv(self.buffer)
+            DATA_RECEIVED = pickle.loads(data)
 
-#     def close(self):
-#         self.socket.close()
+    def close(self):
+        self.socket.close()
 
 
-# class Sender:
-#     def __init__(self):
-#         self.partner_ip = self.__get_pip()  # Get IP address of partner (p_ip)
-#         self.port = 8211
-#         self.p_addr = (self.partner_ip, self.port)
-#         self.socket = socket(AF_INET, SOCK_DGRAM)  # Make a UDP socket
+class Sender:
+    def __init__(self):
+        self.partner_ip = self.__get_pip()  # Get IP address of partner (p_ip)
+        self.port = 8211
+        self.p_addr = (self.partner_ip, self.port)
+        self.socket = socket(AF_INET, SOCK_DGRAM)  # Make a UDP socket
 
-#     @staticmethod
-#     def __get_pip():
-#         ip = tj.get_ip_address()  # input('Enter the IP address of the opponent computer: ')
-#         return ip
+    @staticmethod
+    def __get_pip():
+        ip = tj.get_ip_address()  # input('Enter the IP address of the opponent computer: ')
+        return ip
 
-#     def send_var(self, variable):
-#         data = pickle.dumps(variable)
-#         self.socket.sendto(data, self.p_addr)
+    def send_var(self, variable):
+        data = pickle.dumps(variable)
+        self.socket.sendto(data, self.p_addr)
 
-#     def close(self):
-#         self.socket.close()
+    def close(self):
+        self.socket.close()
 
 
 class Player:
@@ -242,9 +243,9 @@ class Player:
         return [x_coord, y_coord]
 
     def handle_events(self, Proj):
-        # global DATA_TO_SEND
+        global DATA_TO_SEND
         # Proj is the Projectile object here, Sender is the Sender object
-        D = pygame.key.get_pressed()
+        # D = pygame.key.get_pressed()
 
         x_vel, y_vel = 0, 0
         if D[self.controls['UP']]:
@@ -279,7 +280,7 @@ class Player:
         self.add_projectile(player_shoots)
 
         self.coord = self.__check_boundary(self.coord, [x_vel, y_vel])
-        # DATA_TO_SEND.append(self.coord)
+        DATA_TO_SEND.append(self.coord)
 
         self.update_center()
         self.vel = [x_vel, y_vel]
@@ -295,7 +296,7 @@ class Player:
                 Type = self.Type
                 proj = [coord, vel, Type]
                 Proj.add_projectile(coord, vel, Type)
-                # DATA_TO_SEND.append(proj)
+                DATA_TO_SEND.append(proj)
                 self.PLAYER_SHOT = True
 
         else:
@@ -390,14 +391,14 @@ class Projectile:
         return False
 
 
-# def handle_enemy():
-#     # This is the function, specifically for handeling the enemy
-#     global DATA_RECEIVED, E, Proj
-#     coord = DATA_RECEIVED[0]
-#     proj = DATA_RECEIVED[1]
-#     E.coord = coord
-#     E.update_center()
-#     Proj.add_projectile(proj[0], proj[1], 0)
+def handle_enemy():
+    # This is the function, specifically for handeling the enemy
+    global DATA_RECEIVED, E, Proj
+    coord = DATA_RECEIVED[0]
+    proj = DATA_RECEIVED[1]
+    E.coord = coord
+    E.update_center()
+    Proj.add_projectile(proj[0], proj[1], 0)
 
     ### Main Game ###
 
@@ -408,10 +409,10 @@ pygame.font.init()
 screen = pygame.display.set_mode(RES)
 Clock = pygame.time.Clock()
 
-# R = Receiver()
-# task = Thread(target=R.recv_var, daemon=True)
-# task.start()
-# S = Sender()
+R = Receiver()
+task = Thread(target=R.recv_var, daemon=True)
+task.start()
+S = Sender()
 
 
 P = Player(1)
@@ -443,7 +444,7 @@ while run:
     E.check_died()
     display_info(screen, P, E, Proj)
 
-    # S.send_var(DATA_TO_SEND)
+    S.send_var(DATA_TO_SEND)
 
     pygame.display.update()
 
